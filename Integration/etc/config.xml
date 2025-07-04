@@ -5,11 +5,14 @@
         <carriers>
             <evadelivery>
                 <active>0</active>
-                <title>Custom Shipping Title</title>
-                <name>Custom Shipping Method Name</name>
-                <shipping_cost>10</shipping_cost>
+                <title>Eva</title>
+                <name>Eva Local Delivery</name>
                 <sallowspecific>0</sallowspecific>
+                <show_on_frontend>0</show_on_frontend>
                 <model>GoEvaCom\Integration\Model\Carrier\EvaDelivery</model>
+                <islive>Yes</islive>
+                <produrl>https://api.athena.staging.goeva.com</produrl>
+                <stagingurl>http://192.168.1.50:5000</stagingurl>
             </evadelivery>
         </carriers>
     </default>

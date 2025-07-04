@@ -1,0 +1,18 @@
+<!-- ko if: isVisible() -->
+<div class="delivery-instructions-field">
+  <div class="field">
+    <label class="label">
+      <span data-bind="i18n: 'Delivery Instructions'"></span>
+    </label>
+    <div class="control">
+      <textarea
+        data-bind="value: deliveryInstructions, attr: {id: getCode()}"
+        placeholder="Enter delivery instructions (optional)"
+        class="input-text"
+        rows="3"
+      >
+      </textarea>
+    </div>
+  </div>
+</div>
+<!-- /ko -->

@@ -1,78 +1,183 @@
 <?php
-
-declare(strict_types=1);
-
 namespace GoEvaCom\Integration\Model\Carrier;
 
-use Magento\Framework\App\Config\ScopeConfigInterface;
+use Exception;
 use Magento\Quote\Model\Quote\Address\RateRequest;
-use Magento\Quote\Model\Quote\Address\RateResult\Method;
-use Magento\Quote\Model\Quote\Address\RateResult\MethodFactory;
-use Magento\Quote\Model\Quote\Address\RateResult\ErrorFactory;
+use Magento\Shipping\Model\Rate\Result;
 use Magento\Shipping\Model\Carrier\AbstractCarrier;
 use Magento\Shipping\Model\Carrier\CarrierInterface;
-use Magento\Shipping\Model\Rate\Result;
-use Magento\Shipping\Model\Rate\ResultFactory;
-use Psr\Log\LoggerInterface;
+use GoEvaCom\Integration\Helper\AttributeManager;
 
 class EvaDelivery extends AbstractCarrier implements CarrierInterface
 {
     protected $_code = 'evadelivery';
-
-    protected $_isFixed = true;
-
-    private ResultFactory $rateResultFactory;
-
-    private MethodFactory $rateMethodFactory;
+    protected $rateResultFactory;
+    protected $rateMethodFactory;
+    protected $httpClientFactory;
+    protected $helper;
+    protected $quote;
+    protected $attributeManager;
 
     public function __construct(
-        ScopeConfigInterface $scopeConfig,
-        ErrorFactory $rateErrorFactory,
-        LoggerInterface $logger,
-        ResultFactory $rateResultFactory,
-        MethodFactory $rateMethodFactory,
+        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
+        \Magento\Quote\Model\Quote\Address\RateResult\ErrorFactory $rateErrorFactory,
+        \Psr\Log\LoggerInterface $logger,
+        \Magento\Shipping\Model\Rate\ResultFactory $rateResultFactory,
+        \Magento\Quote\Model\Quote\Address\RateResult\MethodFactory $rateMethodFactory,
+        \Magento\Framework\HTTP\Client\CurlFactory $httpClientFactory,
+        \GoEvaCom\Integration\Helper\Data $helper,
+        \Magento\Checkout\Model\Session $checkoutSession,
+        \Magento\Quote\Model\Quote $quote,
+        AttributeManager $attributeManager,
         array $data = []
     ) {
-        parent::__construct($scopeConfig, $rateErrorFactory, $logger, $data);
-
         $this->rateResultFactory = $rateResultFactory;
         $this->rateMethodFactory = $rateMethodFactory;
+        $this->httpClientFactory = $httpClientFactory;
+        $this->helper = $helper;
+        $this->checkoutSession = $checkoutSession;
+        $this->quote = $quote;
+        $this->attributeManager = $attributeManager;
+
+        parent::__construct($scopeConfig, $rateErrorFactory, $logger, $data);
     }
 
-    /**
-     * Custom Shipping Rates Collector
-     *
-     * @param RateRequest $request
-     * @return \Magento\Shipping\Model\Rate\Result|bool
-     */
     public function collectRates(RateRequest $request)
     {
         if (!$this->getConfigFlag('active')) {
             return false;
         }
 
-        /** @var Method $method */
-        $method = $this->rateMethodFactory->create();
+        if (!$this->hasEligibleProducts($request)) {
+            return false;
+        }
 
-        $method->setCarrier($this->_code);
-        $method->setCarrierTitle($this->getConfigData('title'));
-
-        $method->setMethod($this->_code);
-        $method->setMethodTitle($this->getConfigData('name'));
-
-        $shippingCost = (float) $this->getConfigData('shipping_cost');
-        $method->setPrice($shippingCost);
-        $method->setCost($shippingCost);
-
-        /** @var Result $result */
         $result = $this->rateResultFactory->create();
-        $result->append($method);
+        
+        try {
+            $quote = $this->getQuoteFromAPI($request);
+            
+            if ($quote && isset($quote['price'])) {
+                $method = $this->rateMethodFactory->create();
+                $method->setCarrier($this->_code);
+                $method->setCarrierTitle($this->getConfigData('title'));
+                $method->setMethod($this->_code);
+                $method->setMethodTitle($this->getConfigData('name'));
+                $method->setPrice($quote['price']);
+                $method->setCost($quote['price']);
+                
+                $result->append($method);
+            }
+        } catch (\Exception $e) {
+            $this->_logger->error('Eva Delivery Integration Error: ' . $e->getMessage());
+            return false;
+        }
 
         return $result;
     }
 
-    public function getAllowedMethods(): array
+    public function getAllowedMethods()
     {
         return [$this->_code => $this->getConfigData('name')];
+    }
+
+    private function getQuoteFromAPI(RateRequest $request)
+    {
+        $is_live = $this->getConfigData('islive');
+        $apiUrl = $is_live ? $this->getConfigData('produrl') : $this->getConfigData('stagingurl');
+        $apiKey = $is_live ? $this->getConfigData('prodtoken') : $this->getConfigData('stagingtoken');
+    
+        if (!$apiKey) {
+            throw new \Exception('[Carrier] Eva API key missing');
+        }
+
+        $pickupItems = [];
+        $allItems = $request->getAllItems();
+
+        if ($allItems) {
+            foreach ($allItems as $item) {
+
+                
+                if ($item->getParentItem()) {
+                    continue;
+                }
+                
+                if (!$item->getName()) {
+                    continue;
+                }
+                
+                $pickupItems[] = [
+                    'name' => $item->getName(),
+                    'category' => 'General',
+                    'weight' => (float)$item->getWeight(),
+                    'length' => (float)($item->getProduct()->getLength() ?: 0),
+                    'width' => (float)($item->getProduct()->getWidth() ?: 0),
+                    'height' => (float)($item->getProduct()->getHeight() ?: 0),
+                    'quantity' => (int)$item->getQty()
+                ];
+            }
+        }
+        
+        if (empty($pickupItems)) {
+            throw new \Exception('[Carrier] No valid pickup items found');
+        }
+
+        $storeAddress = $this->helper->getStoreAddress();
+        $storeCity = $this->helper->getStoreCity();
+        $storePostcode = $this->helper->getStorePostcode();
+        
+        if (!$storeAddress || !$storeCity || !$storePostcode) {
+            throw new \Exception('[Carrier] Store address information incomplete');
+        }
+        
+        if (!$request->getDestStreet() || !$request->getDestCity() || !$request->getDestPostcode()) {
+            throw new \Exception('[Carrier] Destination address information incomplete');
+        }
+
+        $client = $this->httpClientFactory->create();
+        
+        $headers = [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json'
+        ];
+
+        $data = [
+            'ride_type_id' => 2,
+            'vehicle_type_id' => 1,
+            'from_address' => $storeAddress . ', ' . $storeCity . ', ' . $storePostcode,
+            'to_address' => $request->getDestStreet() . ', ' . $request->getDestCity() . ', ' . $request->getDestPostcode(),
+            'pickup_items' => $pickupItems
+        ];
+
+        $client->setOption(CURLOPT_HTTPHEADER, $headers);
+        $client->setOption(CURLOPT_RETURNTRANSFER, true);
+        $client->setOption(CURLOPT_TIMEOUT, 30);
+        $client->post($apiUrl . '/api/v3/rides/quotes', json_encode($data));
+        
+        $response = $client->getBody();
+        $httpCode = $client->getStatus();
+        
+        if ($httpCode === 200) {
+            $eva_quote = json_decode($response, true);
+
+            return array('price' => $eva_quote['total_price'] / 100);
+        }
+        
+        throw new \Exception('API request failed: ' . $httpCode . ' - ' . $response);
+    }
+
+    private function hasEligibleProducts(RateRequest $request)
+    {
+        $attributeCode = $this->attributeManager->getAttributeCode();
+        
+        foreach ($request->getAllItems() as $item) {
+            $product = $item->getProduct();
+            
+            if ($product->getData($attributeCode) == 0) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 }

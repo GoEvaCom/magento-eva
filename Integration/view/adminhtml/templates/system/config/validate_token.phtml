@@ -1,0 +1,55 @@
+<div id="eva_token_validation">
+    <?= $block->getButtonHtml() ?>
+    <div id="validation_result" style="margin-top: 10px;"></div>
+</div>
+
+<script>
+require(['jquery', 'mage/translate'], function($, $t) {
+    window.validateEvaToken = function() {
+        var isLive = $('#carriers_evadelivery_islive').val();
+        var token = '';
+        
+        if (isLive == '1') {
+            token = $('#carriers_evadelivery_prodtoken').val();
+        } else {
+            token = $('#carriers_evadelivery_stagingtoken').val();
+        }
+        
+        if (!token) {
+            showValidationResult('error', $t('Please enter a token first.'));
+            return;
+        }
+        
+        $('#validate_token_button').prop('disabled', true).find('span').text($t('Validating...'));
+        $('#validation_result').html('<div class="message message-info"><div>' + $t('Validating token...') + '</div></div>');
+        
+        $.ajax({
+            url: '<?= $block->escapeUrl($block->getValidationUrl()) ?>',
+            type: 'POST',
+            data: {
+                token: token,
+                is_live: isLive,
+                form_key: FORM_KEY
+            },
+            success: function(response) {
+                if (response.success) {
+                    showValidationResult('success', response.message);
+                } else {
+                    showValidationResult('error', response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                showValidationResult('error', $t('Validation request failed. Please try again.'));
+            },
+            complete: function() {
+                $('#validate_token_button').prop('disabled', false).find('span').text($t('Validate Token'));
+            }
+        });
+    };
+    
+    function showValidationResult(type, message) {
+        var cssClass = type === 'success' ? 'message-success' : 'message-error';
+        $('#validation_result').html('<div class="message ' + cssClass + '"><div>' + message + '</div></div>');
+    }
+});
+</script>

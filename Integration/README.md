@@ -37,9 +37,37 @@ Next, you will need to create a bind with Docker.
 Go to the compose.yaml file of the Magento installation and insert a new volume in magento-nginx
 `- /home/youruser/magento-eva/:/var/www/html/app/code/GoEvaCom`
 
+Then, you will need to import the module to Magento's composer require.
+Head to your Magento's composer.json and create a repository section & add the module:
+
+`
+{
+...
+
+    "repositories": {
+        ...
+        "goevacom": {
+            "type": "path",
+            "url": "./app/code/GoEvaCom/Integration",
+            "options": {
+                "symlink": true
+            }
+        }
+    },
+
+    "require": {
+        ...
+        "goevacom/magento-integration": "*"
+    }
+
+}
+
 Then, restart the containers
 `bin/stop`
 `bin/start`
+
+Next, run composer update to fetch all the needed packages:
+`bin/composer update`
 
 Then, run setup:upgrade:
 `bin/magento setup:upgrade`
@@ -53,3 +81,19 @@ It should be listed either under disabled or enable list as
 If it is not listed, it might be an issue with the bind, make sure you put in the right directory
 
 You're done, you have now installed the module to Magento!
+
+# Configuration
+
+Go to etc/config.xml and modify the urls to the corresponding environments
+
+# Attributes
+
+If the is_eva_deliverable attribute is not present in the configuration, then you will need to run the manual commands
+
+Add attributes:
+
+`bin/magento evadelivery:attribute:create`
+
+Remove attributes (to update or whatever else):
+
+`bin/magento evadelivery:attribute:remove`

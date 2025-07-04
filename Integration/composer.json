@@ -1,5 +1,5 @@
 {
-  "name": "goevacom/integration-module",
+  "name": "goevacom/magento-integration",
   "description": "Last-Mile Eva Delivery Integration",
   "type": "magento2-module",
   "version": "0.1.0",
@@ -15,7 +15,8 @@
     "magento/module-sales": "103.0.*",
     "magento/module-sales-rule": "101.2.*",
     "magento/module-shipping": "100.4.*",
-    "magento/module-store": "101.1.*"
+    "magento/module-store": "101.1.*",
+    "giggsey/libphonenumber-for-php": "^9.0"
   },
   "authors": [
     {

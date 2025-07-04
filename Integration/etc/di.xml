@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="evadelivery_create_attribute" xsi:type="object">GoEvaCom\Integration\Console\Command\CreateAttributeCommand</item>
+                <item name="evadelivery_remove_attribute" xsi:type="object">GoEvaCom\Integration\Console\Command\RemoveAttributeCommand</item>
+            </argument>
+        </arguments>
+    </type>
+    <preference for="GoEvaCom\Integration\Api\WebhookInterface"
+                type="GoEvaCom\Integration\Model\Webhook"/>
+     <preference for="GoEvaCom\Integration\Api\DeliveryNotesInterface"
+                type="GoEvaCom\Integration\Model\DeliveryNotes" />
+</config>
