@@ -2,7 +2,7 @@
   "name": "goevacom/magento-integration",
   "description": "Eva last-mile delivery integration module for Magento 2",
   "type": "magento2-module",
-  "version": "1.0.0",
+  "version": "1.0.0-beta",
   "license": "BSD-3-Clause",
   "require": {
     "php": "~8.2.0||~8.3.0||~8.4.0",
