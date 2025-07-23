@@ -14,6 +14,7 @@ define([
     },
 
     initialize: function () {
+      console.log(window);
       this._super();
       this.deliveryInstructions = ko.observable("");
       this.isVisible = ko.computed(function () {

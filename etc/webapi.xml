@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
-    <route url="/V1/evadelivery/webhook" method="POST">
+    <!-- <route url="/V1/evadelivery/webhook" method="POST">
         <service class="GoEvaCom\Integration\Api\WebhookInterface" method="receive"/>
         <resources>
             <resource ref="anonymous"/>
         </resources>
-    </route>
+    </route> -->
     <route url="/V1/carts/mine/delivery-instructions" method="POST">
         <service class="GoEvaCom\Integration\Api\DeliveryNotesInterface" method="saveForCustomer"/>
         <resources>

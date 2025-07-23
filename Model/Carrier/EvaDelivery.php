@@ -10,7 +10,8 @@ use GoEvaCom\Integration\Helper\AttributeManager;
 
 class EvaDelivery extends AbstractCarrier implements CarrierInterface
 {
-    protected $_code = 'evadelivery';
+    const CARRIER_CODE = 'evadelivery';
+    protected $_code = self::CARRIER_CODE;
     protected $rateResultFactory;
     protected $rateMethodFactory;
     protected $httpClientFactory;
@@ -25,7 +26,7 @@ class EvaDelivery extends AbstractCarrier implements CarrierInterface
         \Magento\Shipping\Model\Rate\ResultFactory $rateResultFactory,
         \Magento\Quote\Model\Quote\Address\RateResult\MethodFactory $rateMethodFactory,
         \Magento\Framework\HTTP\Client\CurlFactory $httpClientFactory,
-        \GoEvaCom\Integration\Helper\Data $helper,
+        \GoEvaCom\Integration\Helper\IntegrationManager $helper,
         \Magento\Checkout\Model\Session $checkoutSession,
         \Magento\Quote\Model\Quote $quote,
         AttributeManager $attributeManager,

@@ -2,6 +2,8 @@
 namespace GoEvaCom\Integration\Observer;
 
 use Exception;
+use GoEvaCom\Integration\Model\Carrier\EvaDelivery;
+use GoEvaCom\Integration\Model\DeliveryNotes;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Quote\Api\CartRepositoryInterface;
 use libphonenumber\PhoneNumberUtil;
@@ -16,7 +18,7 @@ class CallAfterOrder implements ObserverInterface
     protected $phoneNumberUtil;
 
     public function __construct(
-        \GoEvaCom\Integration\Helper\Data $helper,
+        \GoEvaCom\Integration\Helper\IntegrationManager $helper,
         \Psr\Log\LoggerInterface $logger,
         CartRepositoryInterface $cartRepository
     ) {
@@ -40,10 +42,8 @@ class CallAfterOrder implements ObserverInterface
         }
 
         try {
-            // Parse the phone number
             $phoneNumberObject = $this->phoneNumberUtil->parse($phoneNumber, $countryCode);
             
-            // Check if the number is valid
             if ($this->phoneNumberUtil->isValidNumber($phoneNumberObject)) {
                 // Format to international format (e.g., +1 438 123 1234)
                 $formattedNumber = $this->phoneNumberUtil->format($phoneNumberObject, PhoneNumberFormat::E164);
@@ -52,11 +52,11 @@ class CallAfterOrder implements ObserverInterface
                 return $formattedNumber;
             } else {
                 $this->logger->warning('Eva Delivery: Invalid phone number detected: ' . $phoneNumber . ' for country: ' . $countryCode);
-                return $phoneNumber; // Return original if invalid
+                return $phoneNumber;
             }
         } catch (NumberParseException $e) {
             $this->logger->error('Eva Delivery: Failed to parse phone number: ' . $phoneNumber . ' for country: ' . $countryCode . ' | Error: ' . $e->getMessage());
-            return $phoneNumber; // Return original if parsing fails
+            return $phoneNumber;
         } catch (\Exception $e) {
             $this->logger->error('Eva Delivery: Unexpected error formatting phone number: ' . $e->getMessage());
             return $phoneNumber;
@@ -68,14 +68,14 @@ class CallAfterOrder implements ObserverInterface
         $order = $observer->getEvent()->getOrder();
         $shippingMethod = $order->getShippingMethod();
 
-        if (strpos($shippingMethod, 'evadelivery') === 0) {
+        if (strpos($shippingMethod, EvaDelivery::CARRIER_CODE) === 0) {
             try {
                 // Quote so we can retrieve the delivery note
                 $quoteId = $order->getQuoteId();
                 $this->logger->info('Eva Delivery: Processing order ' . $order->getIncrementId() . ' with quote ID: ' . $quoteId);
                 
                 $quote = $this->cartRepository->get($quoteId);
-                $deliveryInstructions = $quote->getData('eva_delivery_note');
+                $deliveryInstructions = $quote->getData(DeliveryNotes::COLUMN_NAME);
 
                 $this->logger->info('Eva Delivery: Retrieved delivery instructions: ' . ($deliveryInstructions ?: 'NULL/EMPTY'));
 
@@ -145,7 +145,7 @@ class CallAfterOrder implements ObserverInterface
                     $order->addStatusHistoryComment($comment);
                     $order->setData('eva_tracking_url', $ride['tracking_url']);
                     $order->setData('eva_ride_id', $ride['ride_id']);
-                    $order->setData('eva_delivery_note', $deliveryInstructions);
+                    $order->setData(DeliveryNotes::COLUMN_NAME, $deliveryInstructions);
                     $order->save();
                 }
             } catch (\Exception $e) {

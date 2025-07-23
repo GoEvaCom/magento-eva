@@ -3,7 +3,7 @@ namespace GoEvaCom\Integration\Helper;
 
 use Magento\Framework\App\Helper\AbstractHelper;
 
-class Data extends AbstractHelper
+class IntegrationManager extends AbstractHelper
 {
     protected $storeManager;
     protected $httpClientFactory;
@@ -120,7 +120,7 @@ class Data extends AbstractHelper
                 return false;
             }
 
-            $attributeValue = $product->getData('is_eva_deliverable');
+            $attributeValue = $product->getData(AttributeManager::ATTRIBUTE_CODE);
             
             // Convert to boolean - '1' or 1 = true, '0' or 0 or null = false
             return (bool) $attributeValue;
@@ -151,7 +151,7 @@ class Data extends AbstractHelper
                 return null;
             }
 
-            return $product->getData('is_eva_deliverable');
+            return $product->getData(AttributeManager::ATTRIBUTE_CODE);
 
         } catch (NoSuchEntityException $e) {
             $this->logger->error('Product not found: ' . $e->getMessage());

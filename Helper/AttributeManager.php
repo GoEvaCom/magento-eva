@@ -7,6 +7,7 @@ use Magento\Eav\Setup\EavSetup;
 
 class AttributeManager
 {
+    const ATTRIBUTE_CODE = 'is_eva_deliverable';
     /**
      * Get attribute configuration
      *
@@ -15,7 +16,7 @@ class AttributeManager
     public function getAttributeConfig()
     {
         return [
-            'attribute_code' => 'is_eva_deliverable',
+            'attribute_code' => self::ATTRIBUTE_CODE,
             'type' => 'int',
             'backend' => '',
             'frontend' => '',

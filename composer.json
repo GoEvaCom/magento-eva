@@ -1,9 +1,9 @@
 {
   "name": "goevacom/magento-integration",
-  "description": "Last-Mile Eva Delivery Integration",
+  "description": "Eva last-mile delivery integration module for Magento 2",
   "type": "magento2-module",
-  "version": "0.1.0",
-  "license": "Proprietary",
+  "version": "1.0.0",
+  "license": "BSD-3-Clause",
   "require": {
     "php": "~8.2.0||~8.3.0||~8.4.0",
     "magento/framework": "103.0.*",
@@ -36,12 +36,6 @@
     ],
     "psr-4": {
       "GoEvaCom\\Integration\\": ""
-    }
-  },
-  "repositories": {
-    "magento": {
-      "type": "composer",
-      "url": "https://repo-magento-mirror.fooman.co.nz/"
     }
   },
   "require-dev": {

@@ -7,29 +7,35 @@ use Magento\Checkout\Model\Session;
 use Magento\Quote\Model\QuoteIdMaskFactory;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Psr\Log\LoggerInterface;
+use Magento\Framework\Filter\FilterManager;
 
 class DeliveryNotes implements DeliveryNotesInterface
 {
+    const COLUMN_NAME = 'eva_delivery_note';
     private $cartRepository;
     private $checkoutSession;
     private $quoteIdMaskFactory;
     private $logger;
+    private $filter;
 
     public function __construct(
         CartRepositoryInterface $cartRepository,
         Session $checkoutSession,
         QuoteIdMaskFactory $quoteIdMaskFactory,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        FilterManager $filter,
     ) {
         $this->cartRepository = $cartRepository;
         $this->checkoutSession = $checkoutSession;
         $this->quoteIdMaskFactory = $quoteIdMaskFactory;
         $this->logger = $logger;
+        $this->filter = $filter;
     }
 
     public function saveForCustomer($deliveryInstructions)
     {
         try {
+            $deliveryInstructions = $this->filter->stripTags($deliveryInstructions);
             $this->logger->info('DeliveryNotes: Attempting to save for customer: ' . $deliveryInstructions);
             
             $quote = $this->checkoutSession->getQuote();
@@ -40,10 +46,10 @@ class DeliveryNotes implements DeliveryNotesInterface
             
             $this->logger->info('DeliveryNotes: Found quote ID: ' . $quote->getId());
             
-            $quote->setData('eva_delivery_note', $deliveryInstructions);
+            $quote->setData(self::COLUMN_NAME, $deliveryInstructions);
             $this->cartRepository->save($quote);
             
-            $savedValue = $quote->getData('eva_delivery_note');
+            $savedValue = $quote->getData(self::COLUMN_NAME);
             $this->logger->info('DeliveryNotes: Saved and verified value: ' . $savedValue);
             
             return true;
@@ -56,6 +62,7 @@ class DeliveryNotes implements DeliveryNotesInterface
     public function saveForGuest($cartId, $deliveryInstructions)
     {
         try {
+            $deliveryInstructions = $this->filter->stripTags($deliveryInstructions);
             $this->logger->info('DeliveryNotes: Attempting to save for guest cart: ' . $cartId . ', instructions: ' . $deliveryInstructions);
             
             $quoteIdMask = $this->quoteIdMaskFactory->create()->load($cartId, 'masked_id');
@@ -73,10 +80,10 @@ class DeliveryNotes implements DeliveryNotesInterface
                 return false;
             }
             
-            $quote->setData('eva_delivery_note', $deliveryInstructions);
+            $quote->setData(self::COLUMN_NAME, $deliveryInstructions);
             $this->cartRepository->save($quote);
             
-            $savedValue = $quote->getData('eva_delivery_note');
+            $savedValue = $quote->getData(self::COLUMN_NAME);
             $this->logger->info('DeliveryNotes: Saved and verified value: ' . $savedValue);
             
             return true;
