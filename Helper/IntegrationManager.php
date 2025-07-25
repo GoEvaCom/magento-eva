@@ -26,26 +26,38 @@ class IntegrationManager extends AbstractHelper
 
     public function getStoreAddress()
     {
-        return $this->scopeConfig->getValue(
+        $default = $this->scopeConfig->getValue(
             'shipping/origin/street_line1',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE
         );
+
+
+
+        return $default;
     }
 
     public function getStoreCity()
     {
-        return $this->scopeConfig->getValue(
+        $default = $this->scopeConfig->getValue(
             'shipping/origin/city',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE
         );
+
+
+
+        return $default;
     }
 
     public function getStorePostcode()
     {
-        return $this->scopeConfig->getValue(
+        $default = $this->scopeConfig->getValue(
             'shipping/origin/postcode',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE
         );
+
+
+
+        return $default;
     }
 
     public function bookDelivery($orderId, $deliveryData)

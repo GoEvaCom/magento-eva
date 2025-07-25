@@ -10,22 +10,27 @@ use libphonenumber\PhoneNumberUtil;
 use libphonenumber\PhoneNumberFormat;
 use libphonenumber\NumberParseException;
 
+use GoEvaCom\Multistore\Model\StoreLocationRepository;
+
 class CallAfterOrder implements ObserverInterface
 {
     protected $helper;
     protected $logger;
     protected $cartRepository;
     protected $phoneNumberUtil;
+    protected $storeLocationRepository;
 
     public function __construct(
         \GoEvaCom\Integration\Helper\IntegrationManager $helper,
         \Psr\Log\LoggerInterface $logger,
-        CartRepositoryInterface $cartRepository
+        CartRepositoryInterface $cartRepository,
+        StoreLocationRepository $storeLocationRepository
     ) {
         $this->helper = $helper;
         $this->logger = $logger;
         $this->cartRepository = $cartRepository;
         $this->phoneNumberUtil = PhoneNumberUtil::getInstance();
+        $this->storeLocationRepository = $storeLocationRepository;
     }
 
     /**
@@ -110,12 +115,14 @@ class CallAfterOrder implements ObserverInterface
                 $formattedPhoneNumber = $this->formatPhoneNumber($rawPhoneNumber, $shippingCountryCode);
                 
                 $this->logger->info('Eva Delivery: Phone number formatting - Original: ' . $rawPhoneNumber . ' | Country: ' . $shippingCountryCode . ' | Formatted: ' . $formattedPhoneNumber);
+                $storeLocation = $quote->getSelectedStoreLocationId();
+                $selectedLocation = $this->storeLocationRepository->getById($storeLocation);
 
                 $deliveryData = [
                     'pickup_address' => [
-                        'street' => $this->helper->getStoreAddress(),
-                        'city' => $this->helper->getStoreCity(),
-                        'postcode' => $this->helper->getStorePostcode()
+                        'street' => $selectedLocation->getAddress() ?: $this->helper->getStoreAddress(),
+                        'city' => $selectedLocation->getCity() ?: $this->helper->getStoreCity(),
+                        'postcode' => $selectedLocation->getPostcode() ?: $this->helper->getStorePostcode()
                     ],
                     'delivery_address' => [
                         'street' => $order->getShippingAddress()->getStreetLine(1),

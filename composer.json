@@ -16,7 +16,8 @@
     "magento/module-sales-rule": "101.2.*",
     "magento/module-shipping": "100.4.*",
     "magento/module-store": "101.1.*",
-    "giggsey/libphonenumber-for-php": "^9.0"
+    "giggsey/libphonenumber-for-php": "^9.0",
+    "goevacom/magento-multistore": "*"
   },
   "authors": [
     {
@@ -40,6 +41,16 @@
   },
   "require-dev": {
     "symfony/var-dumper": "^7.3"
+  },
+  "repositories": {
+    "magento": {
+      "type": "composer",
+      "url": "https://repo-magento-mirror.fooman.co.nz/"
+    },
+    "goevacom": {
+      "type": "path",
+      "url": "../magento-multistore"
+    }
   },
   "config": {
     "allow-plugins": {

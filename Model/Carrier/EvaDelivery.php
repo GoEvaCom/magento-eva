@@ -8,6 +8,8 @@ use Magento\Shipping\Model\Carrier\AbstractCarrier;
 use Magento\Shipping\Model\Carrier\CarrierInterface;
 use GoEvaCom\Integration\Helper\AttributeManager;
 
+use GoEvaCom\Multistore\Model\StoreLocationRepository;
+
 class EvaDelivery extends AbstractCarrier implements CarrierInterface
 {
     const CARRIER_CODE = 'evadelivery';
@@ -16,8 +18,9 @@ class EvaDelivery extends AbstractCarrier implements CarrierInterface
     protected $rateMethodFactory;
     protected $httpClientFactory;
     protected $helper;
-    protected $quote;
+    protected $quoteRepository;
     protected $attributeManager;
+    protected $storeLocationRepository;
 
     public function __construct(
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
@@ -28,8 +31,8 @@ class EvaDelivery extends AbstractCarrier implements CarrierInterface
         \Magento\Framework\HTTP\Client\CurlFactory $httpClientFactory,
         \GoEvaCom\Integration\Helper\IntegrationManager $helper,
         \Magento\Checkout\Model\Session $checkoutSession,
-        \Magento\Quote\Model\Quote $quote,
         AttributeManager $attributeManager,
+        StoreLocationRepository $storeLocationRepository,
         array $data = []
     ) {
         $this->rateResultFactory = $rateResultFactory;
@@ -37,8 +40,8 @@ class EvaDelivery extends AbstractCarrier implements CarrierInterface
         $this->httpClientFactory = $httpClientFactory;
         $this->helper = $helper;
         $this->checkoutSession = $checkoutSession;
-        $this->quote = $quote;
         $this->attributeManager = $attributeManager;
+        $this->storeLocationRepository = $storeLocationRepository;
 
         parent::__construct($scopeConfig, $rateErrorFactory, $logger, $data);
     }
@@ -123,9 +126,16 @@ class EvaDelivery extends AbstractCarrier implements CarrierInterface
             throw new \Exception('[Carrier] No valid pickup items found');
         }
 
-        $storeAddress = $this->helper->getStoreAddress();
-        $storeCity = $this->helper->getStoreCity();
-        $storePostcode = $this->helper->getStorePostcode();
+        if(! $allItems[0]){
+            throw new \Exception('[Carrier] No items found in cart');
+        }
+
+        $itemQuote = $allItems[0]->getQuote();
+        $selectedLocation = $this->storeLocationRepository->getById($itemQuote->getSelectedStoreLocationId());
+
+        $storeAddress = $selectedLocation->getAddress() ?: $this->helper->getStoreAddress();
+        $storeCity = $selectedLocation->getCity() ?: $this->helper->getStoreCity();
+        $storePostcode = $selectedLocation->getPostcode() ?: $this->helper->getStorePostcode();
         
         if (!$storeAddress || !$storeCity || !$storePostcode) {
             throw new \Exception('[Carrier] Store address information incomplete');
