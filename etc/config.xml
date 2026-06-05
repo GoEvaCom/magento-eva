@@ -11,8 +11,8 @@
                 <show_on_frontend>0</show_on_frontend>
                 <model>GoEvaCom\Integration\Model\Carrier\EvaDelivery</model>
                 <islive>Yes</islive>
-                <produrl>https://api.athena.staging.goeva.com</produrl>
-                <stagingurl>http://192.168.1.50:5000</stagingurl>
+                <produrl>https://api.goeva.com</produrl>
+                <stagingurl>https://api.athena.staging.goeva.com</stagingurl>
             </evadelivery>
         </carriers>
     </default>
